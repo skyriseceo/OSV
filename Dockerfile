@@ -1,13 +1,20 @@
 
 FROM node:20 AS frontend-build
 WORKDIR /app
-COPY OSV/package.json .
-COPY OSV/package-lock.json .
+
+
+COPY OSV/ ./OSV/
+
+
+WORKDIR /app/OSV
+
+
 RUN npm install
-COPY OSV/tailwind.config.js .
-COPY OSV/postcss.config.js .
-COPY OSV/wwwroot/css/input.css ./wwwroot/css/input.css
-RUN npm run css:build # This runs the script from your package.json
+
+
+RUN npm run css:build
+
+
 
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
@@ -23,19 +30,20 @@ COPY Data.Access/Data.Access.csproj Data.Access/
 RUN dotnet restore "OSV/OSV.sln"
 
 
-
 COPY . .
 
 
-COPY --from=frontend-build /app/wwwroot/css/site.css ./OSV/wwwroot/css/site.css
-
+COPY --from=frontend-build /app/OSV/wwwroot/css/site.css ./OSV/wwwroot/css/site.css
 
 WORKDIR "/src/OSV"
+
 RUN dotnet build "OSV.csproj" -c Release -o /app/build
+
 
 
 FROM build AS publish
 RUN dotnet publish "OSV.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
 
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
